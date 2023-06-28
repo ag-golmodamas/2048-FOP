@@ -27,6 +27,7 @@ void add_player(Player players[], int* num_players) {
 
 	strcpy(players[*num_players].name, name);
 	strcpy(players[*num_players].pass, pass);
+	players[*num_players].score = 0;
 
 	(*num_players)++;
 }
@@ -38,7 +39,7 @@ void save_players(Player players[], int num_players) {
 		exit(1);
 	}
 	for (int i = 0; i < num_players; i++) {
-		fprintf(file, "%s %s\n", players[i].name, players[i].pass);
+		fprintf(file, "%s %s %d\n", players[i].name, players[i].pass, players[i].score);
 	}
 	fclose(file);
 }
@@ -103,12 +104,15 @@ void myrank(Player players[], int num_players, int player_index) {
 }
 
 void main_menu(Player players[], int num_players, int player_index) {
-	char init_command[10];
+	char init_command[20];
 	while (1) {
 		scanf("%s", init_command);
 
 		if (!(strcmp(init_command, "start"))) {
-			//start
+			int size;
+			scanf("%d", &size);
+
+			//start_game(players, player_index, size);
 		}
 
 		else if (!(strcmp(init_command, "scoreboard"))) {
@@ -134,12 +138,14 @@ void main_menu(Player players[], int num_players, int player_index) {
 	}
 }
 
+
+
 int main() {
 	Player players[50];
 	int num_players = 0;
 	load_players(players, &num_players);
 
-	char init_command[10] = "guest"; //Default value as guest
+	char init_command[20] = "guest"; //Default value as guest
 	while (1) {
 		printf("Please login, signup or enter as a guest: ");
 		scanf("%s", &init_command);
@@ -156,7 +162,7 @@ int main() {
 		else if (!(strcmp(init_command, "signup"))) {
 			add_player(players, &num_players);
 			save_players(players, num_players);
-			printf("Your are signed up!\nNow Please login to start playing.");
+			printf("Your are signed up!\n");
 		}
 
 
