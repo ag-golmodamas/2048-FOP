@@ -3,6 +3,7 @@
 #include "stdio.h"
 #include <string.h>
 #include <stdlib.h>
+#include <curses.h>
 
 typedef struct {
     char name[50];
@@ -40,6 +41,23 @@ void save_players(Player players[], int num_players) {
     }
     for (int i = 0; i < num_players; i++) {
         fprintf(file, "%s %s %d\n", players[i].name, players[i].pass, players[i].score);
+    }
+    fclose(file);
+}
+
+void save_player(Player players[], int num_players, int current_player_index) {
+    FILE* file = fopen("scoreboard.txt", "w");
+    if (file == NULL) {
+        printf("Error opening file!\n");
+        exit(1);
+    }
+    for (int i = 0; i < num_players; i++) {
+        if (i == current_player_index) {
+            fprintf(file, "%s %s %d\n", players[i].name, players[i].pass, players[i].score);
+        }
+        else {
+            fprintf(file, "%s %s %d\n", players[i].name, players[i].pass, players[i].score);
+        }
     }
     fclose(file);
 }
@@ -103,7 +121,25 @@ void myrank(Player players[], int num_players, int player_index) {
     printf("\n%d- %s - %d\n", player_index + 1, players[player_index].name, players[player_index].score);
 }
 
-void start_game(Player players[], int player_index, int size) {
+int checktwopower(int num) {
+    if (num == 2) return 1;
+    if (num == 4) return 1;
+    if (num == 16) return 1;
+    if (num == 32) return 1;
+    if (num == 64) return 1;
+    if (num == 128) return 1;
+    if (num == 256) return 1;
+    if (num == 512) return 1;
+    if (num == 1024) return 1;
+    if (num == 2048) return 1;
+    if (num == 4096) return 1;
+    if (num == 8192) return 1;
+    else {
+        return 0;
+    }
+}
+
+void start_game(Player players[], int player_index, int size, int num_players) {
 
     if (size < 3) {
         printf("Size must be at least 3\n");
@@ -114,10 +150,12 @@ void start_game(Player players[], int player_index, int size) {
     Player guest_player = { "Guest", "", 0 };
     if (player_index == -1) {
         current_player = &guest_player;
-    }
+    }   
     else {
         current_player = &players[player_index];
     }
+
+    int currentscore = 0;
 
     int** board = (int**)malloc(size * sizeof(int*));
     for (int i = 0; i < size; i++) {
@@ -141,7 +179,7 @@ void start_game(Player players[], int player_index, int size) {
 
     int won = 0;
     while (1) {
-        printf("Current score: %d\n", current_player->score);
+        printf("Current score: %d\n", currentscore);
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 if (board[i][j] == 0) {
@@ -175,7 +213,6 @@ void start_game(Player players[], int player_index, int size) {
         scanf("%s", move);
 
         int moved = 0;
-
         if (!(strcmp(move, "up"))) {
             for (int j = 0; j < size; j++) {
                 int last_merge = -1;
@@ -186,9 +223,11 @@ void start_game(Player players[], int player_index, int size) {
                         if (k == last_merge || board[k][j] != board[i][j]) k++;
                         if (k != i) moved = 1;
                         if (k > last_merge && board[k][j] == board[i][j]) {
-                            players[player_index].score += board[k][j] * 2;
-                            current_player->score += board[k][j] * 2;
-                            board[k][j] += board[i][j];
+                            currentscore += board[k][j] * 2;
+                            if (player_index != -1 && currentscore >= current_player->score) {
+                                current_player->score = currentscore;
+                                save_player(players, num_players, player_index);
+                            }
                             board[i][j] = 0;
                             last_merge = k;
                         }
@@ -200,6 +239,8 @@ void start_game(Player players[], int player_index, int size) {
                 }
             }
         }
+
+
         else if (!(strcmp(move, "down"))) {
             for (int j = 0; j < size; j++) {
                 int last_merge = size;
@@ -210,8 +251,12 @@ void start_game(Player players[], int player_index, int size) {
                         if (k == last_merge || board[k][j] != board[i][j]) k--;
                         if (k != i) moved = 1;
                         if (k < last_merge && board[k][j] == board[i][j]) {
-                            players[player_index].score += board[k][j] * 2;
-                            current_player->score += board[k][j] * 2;
+                            currentscore += board[k][j] * 2;
+
+                            if (player_index != -1 && currentscore >= current_player->score) {
+                                current_player->score = currentscore;
+                                save_player(players, num_players, player_index);
+                            }
                             board[k][j] += board[i][j];
                             board[i][j] = 0;
                             last_merge = k;
@@ -234,8 +279,11 @@ void start_game(Player players[], int player_index, int size) {
                             if (k == last_merge || board[i][k] != board[i][j]) k++;
                             if (k != j) moved = 1;
                             if (k > last_merge && board[i][k] == board[i][j]) {
-                                players[player_index].score += board[i][k] * 2;
-                                current_player->score += board[i][k] * 2;
+                                currentscore += board[i][k] * 2;
+                                if (player_index != -1 && currentscore >= current_player->score) {
+                                    current_player->score = currentscore;
+                                    save_player(players, num_players, player_index);
+                                }
                                 board[i][k] += board[i][j];
                                 board[i][j] = 0;
                                 last_merge = k;
@@ -248,6 +296,7 @@ void start_game(Player players[], int player_index, int size) {
                     }
                 }
             }
+
             else if (!(strcmp(move, "right"))) {
                 for (int i = 0; i < size; i++) {
                     int last_merge = size;
@@ -258,8 +307,11 @@ void start_game(Player players[], int player_index, int size) {
                             if (k == last_merge || board[i][k] != board[i][j]) k--;
                             if (k != j) moved = 1;
                             if (k < last_merge && board[i][k] == board[i][j]) {
-                                players[player_index].score += board[i][k] * 2;
-                                current_player->score += board[i][k] * 2;
+                                currentscore += board[i][k] * 2;
+                                if (player_index != -1 && currentscore >= current_player->score) {
+                                    current_player->score = currentscore;
+                                    save_player(players, num_players, player_index);
+                                }
                                 board[i][k] += board[i][j];
                                 board[i][j] = 0;
                                 last_merge = k;
@@ -279,11 +331,35 @@ void start_game(Player players[], int player_index, int size) {
                 return;
 
             }
+
+            else if (!(strcmp(move, "value"))) {
+                int x, y, cheatnum;
+                scanf("%d %d %d", &x, &y, &cheatnum);
+
+                if (x > size || y > size) {
+                    printf("coordinates out of range!\n");
+                }
+
+                else if (board[x][y] != 0) {
+                    printf("cell is not empty!\n");
+                }
+
+                else if (!(checktwopower(cheatnum))) {
+                    printf("invalid value!\n");
+                }
+
+                else {
+                    board[x][y] = cheatnum;
+                }
+            }
+
             else {
                 printf("Invalid command!\n");
             }
 
             if (!moved) continue;
+
+
 
             int empty_cells = 0;
             for (int i = 0; i < size; i++) {
@@ -325,8 +401,6 @@ void start_game(Player players[], int player_index, int size) {
         free(board);
     }
 
-
-
 void main_menu(Player players[], int num_players, int player_index) {
     char init_command[20];
     while (1) {
@@ -336,7 +410,7 @@ void main_menu(Player players[], int num_players, int player_index) {
             int size;
             scanf("%d", &size);
 
-            start_game(players, player_index, size);
+            start_game(players, player_index, size, num_players);
         }
 
         else if (!(strcmp(init_command, "scoreboard"))) {
@@ -393,7 +467,7 @@ int main() {
         else if (!(strcmp(init_command, "guest"))) {
             int player_index = -1;
             printf("Welcome! Please choose what next to do:\n");
-            main_menu(players, num_players, player_index);
+            main_menu(players, num_players, player_index, num_players);
         }
 
         else if (!(strcmp(init_command, "exit"))) {
